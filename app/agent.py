@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from typing import TypedDict, Annotated
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, END
 from tavily import TavilyClient
@@ -9,8 +9,16 @@ from tavily import TavilyClient
 load_dotenv()
 
 # ── Clients ───────────────────────────────────────────────────
-llm = ChatGroq(model="openai/gpt-oss-120b")
+llm = ChatGoogleGenerativeAI(model="gemini-3.5-flash-lite", google_api_key=os.getenv("GEMINI_API_KEY"))
 tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+
+
+def response_text(response) -> str:
+    """Gemini can return content as a string or a list of content parts (e.g. text + thinking blocks)."""
+    content = response.content
+    if isinstance(content, str):
+        return content
+    return "".join(part.get("text", "") for part in content if isinstance(part, dict))
 
 
 # ── State — what gets passed between nodes ────────────────────
@@ -38,7 +46,7 @@ def search_web(state: ResearchState) -> ResearchState:
             SystemMessage(content="Generate a specific search query to find more information. Return ONLY the query, nothing else."),
             HumanMessage(content=f"Topic: {topic}\nAlready searched: {queries_tried}\nWhat should I search next?")
         ])
-        query = response.content.strip()
+        query = response_text(response).strip()
 
     print(f"Searching: {query}")
 
@@ -91,7 +99,7 @@ Base your report ONLY on the provided sources."""),
 
     return {
         **state,
-        "report": response.content
+        "report": response_text(response)
     }
 
 

@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 langchain
-langchain-groq
+langchain-google-genai
 langgraph
 tavily-python
 python-dotenv
