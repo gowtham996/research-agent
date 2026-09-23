@@ -209,6 +209,23 @@
     padding: 4px 10px;
     margin: 3px 4px 0 0;
   }
+
+  .banner {
+    display: none;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    background: var(--danger-soft);
+    color: var(--danger);
+    font-size: 0.9rem;
+    border: 1px solid var(--danger);
+  }
+
+  .banner.visible { display: flex; }
+
+  .banner .icon { flex-shrink: 0; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -217,6 +234,11 @@
       <h1>Research Agent</h1>
       <p>Ask a question and get a sourced report, backed by live web search.</p>
     </header>
+
+    <div class="banner" id="maintenance-banner">
+      <span class="icon">⚠️</span>
+      <span>We're out of credits for this service right now. It's paused until we're back — please check back later.</span>
+    </div>
 
     <form id="research-form">
       <input id="topic" type="text" placeholder="e.g. Latest developments in solid-state batteries" autocomplete="off" required />
@@ -238,6 +260,9 @@
   </div>
 
 <script>
+  // Flip to false to bring the service back online.
+  const MAINTENANCE_MODE = true;
+
   const form = document.getElementById('research-form');
   const topicInput = document.getElementById('topic');
   const submitBtn = document.getElementById('submit-btn');
@@ -248,9 +273,18 @@
   const reportEl = document.getElementById('report');
   const metaEl = document.getElementById('meta');
   const queriesEl = document.getElementById('queries');
+  const bannerEl = document.getElementById('maintenance-banner');
+
+  if (MAINTENANCE_MODE) {
+    bannerEl.classList.add('visible');
+    topicInput.disabled = true;
+    submitBtn.disabled = true;
+    topicInput.placeholder = 'Research is paused for now';
+  }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (MAINTENANCE_MODE) return;
     const topic = topicInput.value.trim();
     if (!topic) return;
 
