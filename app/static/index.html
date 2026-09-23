@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research Agent</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --border: #e5e3de;
+    --text: #1c1b1a;
+    --text-muted: #6b6862;
+    --accent: #b45309;
+    --accent-hover: #92400e;
+    --accent-soft: #fdf1e2;
+    --danger: #b3261e;
+    --danger-soft: #fbeceb;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17161a;
+      --surface: #201f24;
+      --border: #34323a;
+      --text: #ece9e6;
+      --text-muted: #9a978f;
+      --accent: #e0973f;
+      --accent-hover: #f0ab5c;
+      --accent-soft: #2e2417;
+      --danger: #ef5350;
+      --danger-soft: #2e1f1f;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.25);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    line-height: 1.5;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 16px 80px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 6px;
+    letter-spacing: -0.02em;
+  }
+
+  header p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+  }
+
+  form {
+    display: flex;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px;
+    box-shadow: var(--shadow);
+  }
+
+  #topic {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 1rem;
+    padding: 12px 14px;
+    min-width: 0;
+  }
+
+  #topic::placeholder { color: var(--text-muted); }
+
+  button {
+    border: none;
+    border-radius: 7px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0 22px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    white-space: nowrap;
+  }
+
+  button:hover:not(:disabled) { background: var(--accent-hover); }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .status {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    background: var(--accent-soft);
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+
+  .status.visible { display: flex; }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0,0,0,0.15);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .spinner { border-color: rgba(255,255,255,0.15); border-top-color: var(--accent); }
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error {
+    display: none;
+    margin-top: 20px;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    background: var(--danger-soft);
+    color: var(--danger);
+    font-size: 0.9rem;
+  }
+
+  .error.visible { display: block; }
+
+  #result {
+    display: none;
+    margin-top: 28px;
+  }
+
+  #result.visible { display: block; }
+
+  .report-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    box-shadow: var(--shadow);
+  }
+
+  .report-card h1, .report-card h2, .report-card h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 1.4em 0 0.5em;
+  }
+  .report-card h1:first-child, .report-card h2:first-child, .report-card h3:first-child { margin-top: 0; }
+  .report-card p { margin: 0.6em 0; color: var(--text); }
+  .report-card ul, .report-card ol { margin: 0.6em 0; padding-left: 1.4em; }
+  .report-card li { margin: 0.3em 0; }
+  .report-card a { color: var(--accent); }
+  .report-card strong { font-weight: 700; }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .chip {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 12px;
+  }
+
+  .queries {
+    margin-top: 14px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+  }
+
+  .queries span {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 4px 10px;
+    margin: 3px 4px 0 0;
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Research Agent</h1>
+      <p>Ask a question and get a sourced report, backed by live web search.</p>
+    </header>
+
+    <form id="research-form">
+      <input id="topic" type="text" placeholder="e.g. Latest developments in solid-state batteries" autocomplete="off" required />
+      <button type="submit" id="submit-btn">Research</button>
+    </form>
+
+    <div class="status" id="status">
+      <div class="spinner"></div>
+      <span id="status-text">Researching…</span>
+    </div>
+
+    <div class="error" id="error"></div>
+
+    <div id="result">
+      <div class="report-card" id="report"></div>
+      <div class="meta" id="meta"></div>
+      <div class="queries" id="queries"></div>
+    </div>
+  </div>
+
+<script>
+  const form = document.getElementById('research-form');
+  const topicInput = document.getElementById('topic');
+  const submitBtn = document.getElementById('submit-btn');
+  const statusEl = document.getElementById('status');
+  const statusText = document.getElementById('status-text');
+  const errorEl = document.getElementById('error');
+  const resultEl = document.getElementById('result');
+  const reportEl = document.getElementById('report');
+  const metaEl = document.getElementById('meta');
+  const queriesEl = document.getElementById('queries');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const topic = topicInput.value.trim();
+    if (!topic) return;
+
+    submitBtn.disabled = true;
+    errorEl.classList.remove('visible');
+    resultEl.classList.remove('visible');
+    statusText.textContent = 'Searching the web and writing your report…';
+    statusEl.classList.add('visible');
+
+    try {
+      const res = await fetch('/research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic })
+      });
+
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`Request failed (${res.status}): ${body}`);
+      }
+
+      const data = await res.json();
+
+      reportEl.innerHTML = marked.parse(data.report || '');
+      metaEl.innerHTML = `
+        <span class="chip">${data.sources_used} sources</span>
+        <span class="chip">${data.searches_done} searches</span>
+        <span class="chip">${data.latency_ms} ms</span>
+      `;
+      queriesEl.innerHTML = (data.queries_used || [])
+        .map(q => `<span>${escapeHtml(q)}</span>`)
+        .join('');
+
+      resultEl.classList.add('visible');
+    } catch (err) {
+      errorEl.textContent = err.message || 'Something went wrong. Please try again.';
+      errorEl.classList.add('visible');
+    } finally {
+      statusEl.classList.remove('visible');
+      submitBtn.disabled = false;
+    }
+  });
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

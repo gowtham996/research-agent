@@ -1,10 +1,15 @@
 import os
 import time
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from app.agent import run_research
 
 app = FastAPI(title="Research Agent API")
+
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 class ResearchRequest(BaseModel):
@@ -22,6 +27,11 @@ class ResearchResponse(BaseModel):
 
 @app.get("/")
 def root():
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+
+@app.get("/health")
+def health():
     return {"status": "Research Agent API is running"}
 
 

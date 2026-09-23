@@ -9,7 +9,7 @@ from tavily import TavilyClient
 load_dotenv()
 
 # ── Clients ───────────────────────────────────────────────────
-llm = ChatGroq(model="llama-3.3-70b-versatile")
+llm = ChatGroq(model="openai/gpt-oss-120b")
 tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
 
